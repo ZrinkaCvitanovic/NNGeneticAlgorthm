@@ -1,10 +1,12 @@
 import numpy as np
 import sys
+import copy
 
 features = list()
 target = None
 training__dataset = list()
 testing_dataset = list()
+candidate_error = dict()
 
 def read_csv(file, purpose="train"):
     first = True
@@ -23,19 +25,22 @@ def read_csv(file, purpose="train"):
                     training__dataset.append(np.array(line, dtype=float))
                 else:
                     testing_dataset.append(np.array(line, dtype=float))
+    #https://numpy.org/doc/stable/user/absolute_beginners.html za stvaranje polja
                 
 class NeuralNetwork:
 
-    def __init__(self, input_size, hidden_layers, output_size): #hidden layers je lista koliko imam layera
-        self.layers = []
-        
+    def __init__(self, input_size, hidden_layers, output_size):
+        self.input_size = input_size
+        self.hidden_layers = hidden_layers
+        self.output_size = output_size
+        self.layers = [] #preserve the best solution yet
         #https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html za specifikaciju normalne distribucije
-        self.layers.append(np.random.normal(loc=0.0, scale=0.01, size=(input_size, hidden_layers[0]))) 
-        for i in range(1, len(hidden_layers)):                              
-            self.layers.append(np.random.normal(loc=0.0, scale=0.01, size=(hidden_layers[i-1], hidden_layers[i])))
-        self.layers.append(np.random.normal(loc=0.0, scale=0.01, size=(hidden_layers[-1], output_size)))  
+        
 
-    
+
+    def sigmoid(self, x):
+            return 1 / (1 + np.exp(-x))
+
     def forward_propagate(self, X):
         activation = X
         for i in range (len(self.layers)):
@@ -44,48 +49,103 @@ class NeuralNetwork:
             if i != len(self.layers) - 1:
                 activation = self.sigmoid(activation)
         return activation
-                       
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
     
-    def calculate_error():
+    
+    def modify_layers(self, popsize, elitism, p, K, max_iterations):
+        current_iterations = 0
+        best_solution = None
+        best = None
+        offspring = list()
+        global candidate_error
+        
+        while len(candidate_error) < popsize:
+            candidate = self.generate_chromosome()
+            err = self.calculate_error("modify", candidate)
+            candidate_error[err] = candidate
+            
+        while (current_iterations < max_iterations):
+            for i in range(2000):
+                local_best = None
+                parents, everyone = self.select()
+                child = self.cross(parents[0], parents[1])
+                child = self.mutate(child, p, K)
+                err  = self.calculate_error("modify", child)
+                everyone[err] = child
+                sorted_everyone = list(list(everyone.items()))
+                del sorted_everyone[-1]
+                total_error = self.calculate_error("train")
+                if best is None or total_error < best:
+                    best = total_error
+                    best_solution = self.layers
+                if local_best is None or total_error < local_best:
+                        local_best = total_error
+            current_iterations += 2000
+            print(f"[Train error @{current_iterations}]: {round(local_best, 6)}")
+            
+        print(f"[Train error @10000]: {round(best, 6)}")
+                        
+        return None
+    
+    
+    def generate_chromosome(self):
+        chromosome = []
+        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.input_size, self.hidden_layers[0]))) 
+        for i in range(1, len(self.hidden_layers)):                              
+            chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[i-1], self.hidden_layers[i])))
+        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[-1], self.output_size)))  
+        return chromosome
+    
+    def select(self):
+        first_parent = None
+        second_parent = None
+        sorted_dict = dict(sorted(candidate_error.items()))
+        parents = list(sorted_dict.values())[:2]
+        return parents, sorted_dict 
+    
+    def cross(self, parent1, parent2):
+        child = np.array()
+        for i in range (len(parent1)):
+            child[i] = parent1[i] + parent2[i] / 2.0
+        return child
+    
+    def mutate(self, child, probability, scale):
+        for el in child:
+            p = np.random.rand()
+            if p < probability:
+                el += np.random.normal(loc=0.0, scale=scale)
+        return child 
+            
+       
+
+    def calculate_error(self, phase, dataset=None):
+        if phase == "train":
+            dataset = training__dataset
+        elif phase == "train":
+            dataset = testing_dataset
+        else:
+            dataset = dataset
         result = 0.0
         size = 0
-        for example in training__dataset:
+        for example in dataset:
             size += 1
-            output = network.forward_propagate(example[:-1:1])
-            error = numpy.square(training__dataset[-1] - output[0])
+            output = self.forward_propagate(example[:-1:1])
+            error = np.square(example[-1] - output)
             result += error
         return result / size
-
-    def modify_layers(popsize, elitism, p, K):
-        return None
-                 
-                
     
-    
+                        
 if __name__ == "__main__":
     file_train = "sine_train.txt"
     file_test = "sine_test.txt"
-    nn = [5]
-    popsize = 10 #veličlia populacije
-    elitism = 1  #je li elitistički
-    p = 0.1     #vjerojatnost mutacije
-    K = 0.1     #skala mutacije
+    nn = [2]
+    popsize = 10
+    elitism = 1  
+    p = 0.1     
+    K = 0.1     
     max_iterations = 1000
-    current_iterations = 0
     read_csv(file_train)
     network = NeuralNetwork(len(features), nn, 1)
-    while (current_iterations <= max_iterations ):
-        for i in range(2000):
-            network.modify_layers(popsize, elitism, p, K)
-            #change layers for 2000 times
-        err = network.calculate_error()
-        print(f"[Train error @{current_iterations + 2000}]: {err}")
-        current_iterations += 2000
-
-    read_csv(file_test)
-    current_iterations = 0
-    err = network.calculate_error()
+    network.modify_layers(popsize, elitism, p, K, max_iterations)
+    read_csv(file_test, "test")
+    err = network.calculate_error("test")
     print(f"[Test error]: {err}")
-    
