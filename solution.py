@@ -32,13 +32,12 @@ class NeuralNetwork:
         self.input_size = input_size
         self.hidden_layers = hidden_layers
         self.output_size = output_size
-        self.layers = [] #preserve the best solution yet
-        #https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html za specifikaciju normalne distribucije
+        self.layers = [] #save the best solution here
         
 
 
     def sigmoid(self, x):
-            return 1 / (1 + np.exp(-x))
+            return 1 / (1 + np.exp(-x)) #https://www.askpython.com/python/examples/sigmoid-activation-function
 
     def forward_propagate(self, X, solution):
         activation = X[0:-1]
@@ -46,7 +45,7 @@ class NeuralNetwork:
             weight = solution[i-1]
             bias = solution[i]
             activation = np.dot(weight, activation) + bias
-            if i != len(self.layers) - 1:
+            if i < len(solution) - 1:
                 activation = self.sigmoid(activation)
         return activation[0]
     
@@ -59,7 +58,7 @@ class NeuralNetwork:
         current_best_candidate = None
         current_lowest_error = None
                     
-        while (current_iterations <= max_iterations):
+        while (current_iterations < max_iterations):
             
             while len(candidate_error) < popsize:
                 candidate = self.generate_chromosome()
@@ -69,7 +68,7 @@ class NeuralNetwork:
                     total_error += err
                 total_error = total_error / len(training__dataset)
                 candidate_error[total_error] = candidate
-        
+                
             parents = self.select(candidate_error)
             child = self.cross(parents[0], parents[1])
             child = self.mutate(child, p, K)
@@ -82,34 +81,39 @@ class NeuralNetwork:
             total_error = total_error / len(training__dataset)
             candidate_error[total_error] = child
             sorted_everyone = dict(sorted(candidate_error.items()))
-            iter_lowest_error = list(sorted_everyone.keys())[0] #https://stackoverflow.com/questions/30362391/how-do-you-find-the-first-key-in-a-dictionary
+            iter_lowest_error = list(sorted_everyone.keys())[0] 
+            #https://stackoverflow.com/questions/30362391/how-do-you-find-the-first-key-in-a-dictionary
             if current_lowest_error is None or iter_lowest_error < current_lowest_error:
                     current_lowest_error = iter_lowest_error
                     current_best_candidate = candidate_error[iter_lowest_error]
-            if total_lowest_error is None or current_lowest_error < total_lowest_error:
-                    total_lowest_error = current_lowest_error
-                    optimal_solution = current_best_candidate
+            
             candidate_error = dict()
-            candidate_error[current_lowest_error] = current_best_candidate #elitism is 1
+            candidate_error[current_lowest_error] = current_best_candidate
+            
             if current_iterations%2000 == 0:
                 print(f"[Train error @{current_iterations}]: {round(current_lowest_error, 6)}")
+                if total_lowest_error is None or current_lowest_error < total_lowest_error:
+                    total_lowest_error = current_lowest_error
+                    optimal_solution = current_best_candidate
                 current_best_candidate = None 
                 current_lowest_error = None 
             current_iterations += 1
+            
                     
-        print(f"[Train error @10000]: {round(total_lowest_error, 6)}")       
+        print(f"[Train error @{max_iterations}]: {round(total_lowest_error, 6)}")       
         self.layers = optimal_solution 
         return None
     
     
     def generate_chromosome(self):
         chromosome = []
+        #https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html za specifikaciju normalne distribucije
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[0], self.input_size))) 
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[0]))) 
         for i in range(1, len(self.hidden_layers)):                              
             chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[i], self.hidden_layers[i-1])))
             chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[i])))
-        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.output_size, self.hidden_layers[0])))
+        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.output_size, self.hidden_layers[-1])))
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.output_size)))  
         return chromosome
     
@@ -128,26 +132,26 @@ class NeuralNetwork:
     
     def mutate(self, child, probability, scale):
         for el in child:
-            for e in el:
-                p = np.random.rand() #https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html
-                if p < probability:
-                    number = np.random.normal(loc=0.0, scale=scale)
-                    e = np.add(e, number)
+            p = np.random.rand() #https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html
+            if p < probability:
+                number = np.random.normal(loc=0.0, scale=scale, size=len(el))
+                el = np.add(el, number)
         return child 
 
     def calculate_error_squared(self, example, solution):
         output = self.forward_propagate(example, solution)
-        return pow((example[-1] - output), 2)
+        number = example[-1] - output
+        return pow(number, 2)
     
                         
 if __name__ == "__main__":
-    file_train = "sine_train.txt"
-    file_test = "sine_test.txt"
-    nn = [2]
+    file_train = "rastrigin_train.txt"
+    file_test = "rastrigin_test.txt"
+    nn = [5]
     popsize = 10
     elitism = 1  
-    p = 0.1     
-    K = 0.1     
+    p = 0.3    
+    K = 0.5     
     max_iterations = 10000
     read_csv(file_train)
     network = NeuralNetwork(len(features), nn, 1)
