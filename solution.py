@@ -44,7 +44,7 @@ class NeuralNetwork:
         for i in range (1, len(solution), 2):
             weight = solution[i-1]
             bias = solution[i]
-            activation = np.dot(weight, activation) + bias
+            activation = np.dot(activation, weight) + bias
             if i < len(solution) - 1:
                 activation = self.sigmoid(activation)
         return activation[0]
@@ -108,12 +108,12 @@ class NeuralNetwork:
     def generate_chromosome(self):
         chromosome = []
         #https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html za specifikaciju normalne distribucije
-        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[0], self.input_size))) 
+        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.input_size, self.hidden_layers[0]))) 
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[0]))) 
         for i in range(1, len(self.hidden_layers)):                              
-            chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[i], self.hidden_layers[i-1])))
+            chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[i-1], self.hidden_layers[i])))
             chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[i])))
-        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.output_size, self.hidden_layers[-1])))
+        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[-1], self.output_size)))
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.output_size)))  
         return chromosome
     
@@ -132,9 +132,14 @@ class NeuralNetwork:
     
     def mutate(self, child, probability, scale):
         for el in child:
+            try: 
+                rows, cols = el.shape
+            except:
+                rows = el.shape[0]
+                cols = 1
             p = np.random.rand() #https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html
             if p < probability:
-                number = np.random.normal(loc=0.0, scale=scale, size=len(el))
+                number = np.random.normal(loc=0.0, scale=scale, size=(rows, cols))
                 el = np.add(el, number)
         return child 
 
@@ -145,13 +150,13 @@ class NeuralNetwork:
     
                         
 if __name__ == "__main__":
-    file_train = "rastrigin_train.txt"
-    file_test = "rastrigin_test.txt"
-    nn = [5]
-    popsize = 10
+    file_train = "rosenbrock_train.txt"
+    file_test = "rosenbrock_test.txt"
+    nn = [20]
+    popsize = 20
     elitism = 1  
-    p = 0.3    
-    K = 0.5     
+    p = 0.5    
+    K = 10   
     max_iterations = 10000
     read_csv(file_train)
     network = NeuralNetwork(len(features), nn, 1)
