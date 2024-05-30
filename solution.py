@@ -33,8 +33,7 @@ class NeuralNetwork:
         self.input_size = input_size
         self.hidden_layers = hidden_layers
         self.output_size = output_size
-        self.layers = [] #preserve the best solution yet
-        #https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html za specifikaciju normalne distribucije
+        self.layers = [] 
         for i in range (len(self.hidden_layers)):
             self.hidden_layers[i] = int(self.hidden_layers[i])
         
@@ -111,6 +110,7 @@ class NeuralNetwork:
     
     def generate_chromosome(self):
         chromosome = []
+        #https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html za specifikaciju normalne distribucije
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[0], self.input_size))) 
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[0]))) 
         for i in range(1, len(self.hidden_layers)):                              
@@ -155,7 +155,7 @@ class NeuralNetwork:
     
                         
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser() #prvi labos
     parser.add_argument( '--train', help='Upišite putanju do datoteke s podatcima za učenje.' )
     parser.add_argument( '--test', help='Upišite putanju do datoteke s podatcima za testiranje.' )
     parser.add_argument( '--nn', help='Odredite arhitekturu neuronske mreže. Skrivene slojeve odvojite slovom "s".' )
@@ -173,15 +173,6 @@ if __name__ == "__main__":
     p = float(arguments.p)
     K = float(arguments.K)
     max_iterations = int (arguments.iter)
-    """
-    file_train = "sine_train.txt"
-    file_test = "sine_test.txt"
-    nn = [5]
-    popsize = 10
-    elitism = 1  
-    p = 0.1     
-    K = 0.1     
-    max_iterations = 2000"""
     read_csv(file_train)
     network = NeuralNetwork(len(features), nn, 1)
     optimal_solution = network.modify_layers(popsize, elitism, p, K, max_iterations)
