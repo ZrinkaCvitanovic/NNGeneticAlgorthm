@@ -141,12 +141,12 @@ class NeuralNetwork:
         return child
     
     def mutate(self, child, probability, scale):
-        for el in child:
-            for e in el:
+        for i in range (len(child)):
+            for j in range (len(child[i])):
                 p = np.random.rand() #https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html
                 if p < probability:
                     number = np.random.normal(loc=0.0, scale=scale)
-                    e = np.add(e, number)
+                    child[i][j] = np.add(child[i][j], number)
         return child 
 
     def calculate_error_squared(self, example, solution):
