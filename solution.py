@@ -25,7 +25,6 @@ def read_csv(file, purpose="train"):
                     training__dataset.append(np.array(line, dtype=float))
                 else:
                     testing_dataset.append(np.array(line, dtype=float))
-    #https://numpy.org/doc/stable/user/absolute_beginners.html za stvaranje polja
                 
 class NeuralNetwork:
 
@@ -35,8 +34,7 @@ class NeuralNetwork:
         self.output_size = output_size
         self.layers = [] 
         for i in range (len(self.hidden_layers)):
-            self.hidden_layers[i] = int(self.hidden_layers[i])
-        
+            self.hidden_layers[i] = int(self.hidden_layers[i])     
 
 
     def sigmoid(self, x):
@@ -82,7 +80,7 @@ class NeuralNetwork:
                 continue
             population[total_error] = child
             sorted_population = dict(sorted(population.items()))
-            sorted_keys = list(sorted_population.keys())[0:elitism] #https://stackoverflow.com/questions/30362391/how-do-you-find-the-first-key-in-a-dictionary
+            sorted_keys = list(sorted_population.keys())[0:elitism]
             if current_lowest_error is None or sorted_keys[0] < current_lowest_error:
                     current_lowest_error = sorted_keys[0]
             population = dict()
@@ -110,13 +108,12 @@ class NeuralNetwork:
     
     def generate_chromosome(self):
         chromosome = []
-        #https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html za specifikaciju normalne distribucije
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[0], self.input_size))) 
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[0]))) 
         for i in range(1, len(self.hidden_layers)):                              
             chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[i], self.hidden_layers[i-1])))
             chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.hidden_layers[i])))
-        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.output_size, self.hidden_layers[0])))
+        chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.output_size, self.hidden_layers[-1])))
         chromosome.append(np.random.normal(loc=0.0, scale=0.01, size=(self.output_size)))  
         return chromosome
     
@@ -142,11 +139,10 @@ class NeuralNetwork:
     
     def mutate(self, child, probability, scale):
         for i in range (len(child)):
-            for j in range (len(child[i])):
-                p = np.random.rand() #https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html
-                if p < probability:
-                    number = np.random.normal(loc=0.0, scale=scale)
-                    child[i][j] = np.add(child[i][j], number)
+            p = np.random.rand()
+            if p < probability:
+                number = np.random.normal(loc=0.0, scale=scale)
+                child[i] = np.add(child[i], number)
         return child 
 
     def calculate_error_squared(self, example, solution):
@@ -156,14 +152,14 @@ class NeuralNetwork:
                         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser() #prvi labos
-    parser.add_argument( '--train', help='Upišite putanju do datoteke s podatcima za učenje.' )
-    parser.add_argument( '--test', help='Upišite putanju do datoteke s podatcima za testiranje.' )
-    parser.add_argument( '--nn', help='Odredite arhitekturu neuronske mreže. Skrivene slojeve odvojite slovom "s".' )
-    parser.add_argument( '--popsize', help='Odredite veličinu populacije.' )
-    parser.add_argument( '--elitism', help='Odreite elitizam algoritma ')
-    parser.add_argument( '--p', help='Odredite vjerojatnost za mutaciju kromosoma' )
-    parser.add_argument( '--K', help='Odredite standardnu devijaciju Gaussovog šuma mutacije' )
-    parser.add_argument( '--iter', help='Odredite maksimalan dopušten broj iteracija')
+    parser.add_argument( '--train', help='Path to a file with training data.' )
+    parser.add_argument( '--test', help='Path to a file with testing data.' )
+    parser.add_argument( '--nn', help='Neural network architecture. Separate hidden layers with "s".' )
+    parser.add_argument( '--popsize', help='Population size.' )
+    parser.add_argument( '--elitism', help='Define how many best candidates are preserved (if none, enter 0).')
+    parser.add_argument( '--p', help='Probability of a mutation' )
+    parser.add_argument( '--K', help='Standard deviation used for mutation a chromosome' )
+    parser.add_argument( '--iter', help='Maximum number of iterations')
     arguments = parser.parse_args()
     file_train = arguments.train
     file_test = arguments.test
